@@ -82,7 +82,7 @@ class AutoReger:
 
         if logs["ok"]:
             logs["file"] = "success"
-            logs["msg"] = " | Claimed!"
+            logs["msg"] = "Claimed!"
             self.success += 1
         else:
             logs["msg"] = "Check logs/out.log for more info"
