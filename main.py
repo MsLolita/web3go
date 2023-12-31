@@ -1,5 +1,6 @@
 import asyncio
 import ctypes
+import os
 
 from core.autoreger import AutoReger
 from art import tprint
@@ -7,7 +8,9 @@ from art import tprint
 
 def bot_info(name: str = ""):
     tprint(name)
-    ctypes.windll.kernel32.SetConsoleTitleW(f"{name}")
+
+    if os.name == 'nt':
+        ctypes.windll.kernel32.SetConsoleTitleW(f"{name}")
     print("EnJoYeR's <crypto/> moves: https://t.me/+tdC-PXRzhnczNDli\n")
 
 
