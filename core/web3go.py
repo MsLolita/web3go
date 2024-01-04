@@ -32,7 +32,7 @@ class Web3Go:
             trust_env=True
         )
 
-        self.proxy = None
+        # self.proxy = None
 
     async def define_proxy(self, proxy: str):
         if MOBILE_PROXY:
@@ -93,7 +93,7 @@ class Web3Go:
         }
 
         response = await self.session.put(url, params=params, proxy=self.proxy)
-
+        print(await response.text())
         return await response.text() == "true"
 
     async def logout(self):
