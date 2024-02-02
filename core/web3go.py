@@ -4,6 +4,7 @@ import aiohttp
 from inputs.config import MOBILE_PROXY_CHANGE_IP_LINK, MOBILE_PROXY
 from .utils import Web3Utils, logger
 from .utils.file_manager import str_to_file
+from tenacity import retry, stop_after_attempt, stop_after_delay
 
 
 class Web3Go:
@@ -47,6 +48,7 @@ class Web3Go:
         async with aiohttp.ClientSession() as session:
             await session.get(MOBILE_PROXY_CHANGE_IP_LINK)
 
+    @retry(stop=stop_after_attempt(20))
     async def login(self):
         url = 'https://reiki.web3go.xyz/api/account/web3/web3_challenge'
 
@@ -69,8 +71,10 @@ class Web3Go:
         if auth_token:
             self.upd_login_token(auth_token)
 
-        return bool(auth_token)
+            return bool(auth_token)
+        assert False
 
+    @retry(stop=stop_after_attempt(20))
     async def get_login_params(self):
         url = 'https://reiki.web3go.xyz/api/account/web3/web3_nonce'
 
@@ -85,6 +89,7 @@ class Web3Go:
     def upd_login_token(self, token: str):
         self.session.headers["Authorization"] = f"Bearer {token}"
 
+    @retry(stop=stop_after_attempt(20))
     async def claim(self):
         url = 'https://reiki.web3go.xyz/api/checkin'
 
