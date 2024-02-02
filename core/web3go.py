@@ -97,9 +97,10 @@ class Web3Go:
             'day': self.get_current_date(),
         }
 
-        response = await self.session.put(url, params=params, proxy=self.proxy)
-        print(await response.text())
-        return await response.text() == "true"
+        response = await self.session.put(url, params=params)
+
+        assert await response.text() == "true"
+        return True
 
     async def logout(self):
         await self.session.close()
