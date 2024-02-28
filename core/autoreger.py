@@ -2,14 +2,13 @@ import asyncio
 import random
 import time
 from asyncio import Semaphore, sleep, create_task, gather
-from concurrent.futures import ThreadPoolExecutor
 
 from core.utils import logger
 from core.utils.file_to_list import file_to_list
 from core.web3go import Web3Go
 
 from inputs.config import (
-    THREADS, CUSTOM_DELAY, KEYS_FILE_PATH, PROXIES_FILE_PATH
+    THREADS, CUSTOM_DELAY, KEYS_FILE_PATH, PROXIES_FILE_PATH, SPIN_LOTTERY_ONLY
 )
 
 
@@ -65,24 +64,30 @@ class AutoReger:
         key, proxy = account
         logs = {"ok": False, "file": "fail.txt", "msg": ""}
 
-        try:
-            async with semaphore:
-                await AutoReger.custom_delay()
+        for _ in range(6):
+            try:
+                async with semaphore:
+                    await AutoReger.custom_delay()
 
-                web3go = Web3Go(key, proxy)
-                if await web3go.login():
+                    web3go = Web3Go(key)
                     await web3go.define_proxy(proxy)
 
-                    logs["ok"] = await web3go.claim()
+                    if await web3go.login():
+                        if SPIN_LOTTERY_ONLY:
+                            await web3go.roll_up_lottery()
+                            logs["ok"] = True
+                        else:
+                            logs["ok"] = await web3go.claim()
 
-                    await web3go.logout()
-        except Exception as e:
-            logs["msg"] = str(e)
-            logger.error(f"Error {e}")
+                        await web3go.logout()
+                        break
+            except Exception as e:
+                logs["msg"] = str(e)
+                logger.error(f"Error {e}")
 
         if logs["ok"]:
             logs["file"] = "success"
-            logs["msg"] = "Claimed!"
+            logs["msg"] = "Handled!"
             self.success += 1
         else:
             logs["msg"] = "Check logs/out.log for more info"

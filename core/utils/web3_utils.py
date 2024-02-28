@@ -16,6 +16,9 @@ class Web3Utils:
 
         self.define_new_provider(http_provider)
 
+    def __str__(self):
+        return f"{self.acct.address[:10]}...{self.acct.address[-10:]}"
+
     def define_new_provider(self, http_provider: str):
         self.w3 = Web3(Web3.HTTPProvider(http_provider))
 
