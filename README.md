@@ -6,6 +6,7 @@ Discover the latest `<crypto/>` moves in our Telegram group: [Web3 Enjoyer Club]
 
 You have the flexibility to customize parameters in `inputs/config.py` 🧬
 
+
 ![image](https://github.com/opensolmap/solmap/assets/58307006/72e47109-9e88-451d-9148-beeb9f5bdefa)
 
 1. (Optional) Private keys Configuration 

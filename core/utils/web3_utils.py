@@ -7,6 +7,7 @@ class Web3Utils:
     def __init__(self, http_provider: str = 'https://eth.llamarpc.com', mnemonic: str = None, key: str = None):
         self.w3 = None
         Account.enable_unaudited_hdwallet_features()
+
         if mnemonic:
             self.mnemonic = mnemonic
             self.acct = Account.from_mnemonic(mnemonic)
