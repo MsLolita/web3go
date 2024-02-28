@@ -1,10 +1,5 @@
-import asyncio
 import datetime
-import random
-
 import aiohttp
-from aiohttp_socks import ProxyType, ProxyConnector, ChainProxyConnector
-from tenacity import retry, stop_after_attempt, stop_after_delay
 
 from inputs.config import MOBILE_PROXY_CHANGE_IP_LINK, MOBILE_PROXY
 from .utils import Web3Utils, logger
@@ -14,9 +9,9 @@ from .utils.file_manager import str_to_file
 class Web3Go:
     def __init__(self, key: str, proxy: str = None):
         self.web3_utils = Web3Utils(key=key)
-        # self.proxy = f'http://{proxy}' if proxy else None
+        self.proxy = f'http://{proxy}' if proxy else None
 
-        self.headers = {
+        headers = {
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'uk-UA,uk;q=0.9',
             'Connection': 'keep-alive',
@@ -32,8 +27,12 @@ class Web3Go:
             'sec-ch-ua-platform': '"Windows"',
         }
 
-        self.session = None
-        self.proxy = proxy
+        self.session = aiohttp.ClientSession(
+            headers=headers,
+            trust_env=True
+        )
+
+        # self.proxy = None
 
     async def define_proxy(self, proxy: str):
         if MOBILE_PROXY:
@@ -41,23 +40,16 @@ class Web3Go:
             self.proxy = MOBILE_PROXY
 
         if proxy is not None:
-            self.proxy = proxy
-
-        connector = self.proxy and ProxyConnector.from_url(f'http://{self.proxy}')
-        self.session = aiohttp.ClientSession(
-            headers=self.headers,
-            trust_env=True,
-            connector=connector
-        )
+            self.proxy = f"http://{proxy}"
 
     @staticmethod
     async def change_ip():
         async with aiohttp.ClientSession() as session:
             await session.get(MOBILE_PROXY_CHANGE_IP_LINK)
 
-    @retry(stop=stop_after_attempt(20))
     async def login(self):
         url = 'https://reiki.web3go.xyz/api/account/web3/web3_challenge'
+
         params = await self.get_login_params()
         address = params["address"]
         nonce = params["nonce"]
@@ -70,8 +62,7 @@ class Web3Go:
             'signature': self.web3_utils.get_signed_code(msg),
         }
 
-        response = await self.session.post(url, json=json_data)
-
+        response = await self.session.post(url, json=json_data, proxy=self.proxy)
         res_json = await response.json()
         auth_token = res_json.get("extra", {}).get("token")
 
@@ -80,7 +71,6 @@ class Web3Go:
 
         return bool(auth_token)
 
-    @retry(stop=stop_after_attempt(20))
     async def get_login_params(self):
         url = 'https://reiki.web3go.xyz/api/account/web3/web3_nonce'
 
@@ -88,14 +78,13 @@ class Web3Go:
             'address': self.web3_utils.acct.address,
         }
 
-        response = await self.session.post(url, json=json_data, ssl=False)
+        response = await self.session.post(url, json=json_data, proxy=self.proxy)
 
         return await response.json()
 
     def upd_login_token(self, token: str):
         self.session.headers["Authorization"] = f"Bearer {token}"
 
-    @retry(stop=stop_after_attempt(20))
     async def claim(self):
         url = 'https://reiki.web3go.xyz/api/checkin'
 
@@ -103,44 +92,9 @@ class Web3Go:
             'day': self.get_current_date(),
         }
 
-        response = await self.session.put(url, params=params)
-
-        assert await response.text() == "true"
-        return True
-
-    async def roll_up_lottery(self, lottery_step: int = 2000):
-        leafs = await self.get_leaf_amount()
-
-        if leafs < lottery_step:
-            logger.info(f"{self.web3_utils} | Not enough leafs to spin: {leafs} leafs")
-            return
-
-        while leafs >= lottery_step:
-            await asyncio.sleep(random.uniform(3, 5))
-            prize = await self.spin_lottery()
-            leafs -= lottery_step
-            logger.info(f"{self.web3_utils} | Prize: {prize} | Leafs left: {leafs}")
-
-    @retry(stop=stop_after_attempt(5))
-    async def get_lottery_result(self):
-        url = 'https://reiki.web3go.xyz/api/lottery/offchain'
-
-        response = await self.session.get(url)
-
-        return await response.json()
-
-    async def get_leaf_amount(self):
-        resp_json = await self.get_lottery_result()
-        return resp_json["userGoldLeafCount"]
-
-    @retry(stop=stop_after_attempt(5))
-    async def spin_lottery(self):
-        url = "https://reiki.web3go.xyz/api/lottery/try"
-
-        response = await self.session.post(url)
-        resp_json = await response.json()
-
-        return resp_json["prize"]
+        response = await self.session.put(url, params=params, proxy=self.proxy)
+        print(await response.text())
+        return await response.text() == "true"
 
     async def logout(self):
         await self.session.close()
