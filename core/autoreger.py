@@ -8,7 +8,8 @@ from core.utils.file_to_list import file_to_list
 from core.web3go import Web3Go
 
 from inputs.config import (
-    THREADS, CUSTOM_DELAY, KEYS_FILE_PATH, PROXIES_FILE_PATH, SPIN_LOTTERY_ONLY
+    THREADS, CUSTOM_DELAY, KEYS_FILE_PATH, PROXIES_FILE_PATH, SPIN_LOTTERY_ONLY, MINT_EVERYTHING, SEND_TO_MASTER,
+    SEND_CHIP_TO_HELL
 )
 
 
@@ -78,6 +79,15 @@ class AutoReger:
                             logs["ok"] = True
                         else:
                             logs["ok"] = await web3go.claim()
+                        if MINT_EVERYTHING:
+                            await web3go.mint_chip_and_pieces()
+                        if SEND_TO_MASTER:
+                            await web3go.send_to_master()
+                        minted_chip, minted_piece = await web3go.get_minted_balance()
+                        if SEND_CHIP_TO_HELL:
+                            if minted_chip > 0:
+                                await web3go.burn_chip()
+                                await web3go.get_minted_balance()
 
                         await web3go.logout()
                         break
